@@ -32,10 +32,12 @@
 		document.getElementById("auth-phone").required = signUp;
 		document.getElementById("auth-password").autocomplete = signUp ? "new-password" : "current-password";
 		document.getElementById("auth-title").textContent = signUp ? "Create your Loop account" : "Welcome to Loop";
-		document.getElementById("auth-description").textContent = signUp ? "Create an account from this invitation. Email addresses are not verified." : "Sign in to message your friends.";
+		document.getElementById("auth-description").textContent = signUp
+			? `Create your account${inviteToken ? " from this invitation" : ""}. Email and phone numbers are not verified.`
+			: "Sign in to message your friends.";
 		document.getElementById("auth-submit").textContent = signUp ? "Create account" : "Sign in";
 		const authToggle = document.getElementById("auth-toggle");
-		authToggle.hidden = !inviteToken;
+		authToggle.hidden = false;
 		authToggle.textContent = signUp ? "Already have an account? Sign in" : "Create an account";
 		message("");
 	}
@@ -237,7 +239,6 @@
 		const password = document.getElementById("auth-password").value;
 		let result;
 		if (signUpMode) {
-			if (!inviteToken) { message("Create an account using a friend's invite link.", true); return; }
 			const phone = normalizePhone(document.getElementById("auth-phone").value);
 			const name = document.getElementById("auth-name").value.trim();
 			if (!phone || !name) { message("Enter your name and a valid phone number.", true); return; }
