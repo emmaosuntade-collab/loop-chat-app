@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#f6f7f3">
+	<title>Loop — messages, made personal</title>
+	<style>
+		:root { color-scheme: light; --ink: #202720; --muted: #858d84; --line: #e8ebe5; --paper: #f6f7f3; --white: #fff; --green: #178c68; --green-dark: #116e52; --font: "Avenir Next", Avenir, "Segoe UI", sans-serif; }
+		* { box-sizing: border-box; }
+		body { margin: 0; min-width: 320px; height: 100vh; overflow: hidden; background: var(--paper); color: var(--ink); font-family: var(--font); }
+		button, input, textarea { font: inherit; }
+		button { color: inherit; }
+		.shell { display: grid; width: 100%; height: 100vh; min-height: 520px; grid-template-columns: 350px minmax(0, 1fr); }
+		.shell[hidden] { display: none; }
+		.sidebar { z-index: 2; display: flex; min-height: 0; flex-direction: column; border-right: 1px solid var(--line); background: var(--white); }
+		.side-header { display: flex; height: 72px; flex: 0 0 auto; align-items: center; justify-content: space-between; padding: 0 21px; border-bottom: 1px solid var(--line); }
+		.brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; letter-spacing: 0; }
+		.brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 13px 13px 13px 4px; background: var(--green); color: white; font-size: 18px; }
+		.profile-avatar, .friend-avatar { display: grid; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #e2c6b7; color: #523e35; font-size: 12px; font-weight: 700; }
+		.profile-avatar { width: 36px; height: 36px; background: #d9e9d5; color: #39533b; }
+		.side-tools { display: grid; gap: 14px; padding: 17px 17px 15px; }
+		.add-friend { display: flex; width: 100%; height: 42px; align-items: center; justify-content: center; gap: 9px; border: 0; border-radius: 8px; background: var(--green); color: white; cursor: pointer; font-size: 12px; font-weight: 650; transition: background .16s, transform .16s; }
+		.add-friend:hover { transform: translateY(-1px); background: var(--green-dark); }
+		.add-friend span { font-size: 19px; font-weight: 400; line-height: 1; }
+		.search-box { display: flex; height: 38px; align-items: center; gap: 9px; padding: 0 11px; border: 1px solid transparent; border-radius: 7px; background: #f2f4f0; color: #899087; }
+		.search-box:focus-within { border-color: #a6cbb7; background: white; }
+		.search-box input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 11px; }
+		.search-box input::placeholder { color: #929990; }
+		.list-section { min-height: 0; flex: 1; overflow-y: auto; }
+		.section-title { display: flex; align-items: center; justify-content: space-between; padding: 6px 21px 10px; color: #879087; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+		.friend-list { display: grid; }
+		.friend-row { display: flex; width: 100%; min-height: 70px; align-items: center; gap: 12px; padding: 9px 18px; border: 0; background: transparent; text-align: left; cursor: pointer; transition: background .14s; }
+		.friend-row:hover { background: #f6f8f5; }
+		.friend-row.active { background: #eff5ef; }
+		.friend-avatar { width: 43px; height: 43px; background: #cce4d9; color: #285d4c; font-size: 12px; }
+		.friend-copy { min-width: 0; flex: 1; }
+		.friend-topline { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+		.friend-name { overflow: hidden; color: #303831; font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+		.friend-time { flex: 0 0 auto; color: #939b91; font-size: 9px; }
+		.friend-preview { overflow: hidden; margin-top: 5px; color: #899087; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+		.invitation-section { flex: 0 0 auto; border-top: 1px solid var(--line); }
+		.invite-row { display: flex; align-items: center; gap: 11px; padding: 9px 18px 13px; }
+		.invite-symbol { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border: 1px dashed #b8c7bb; border-radius: 50%; color: var(--green); font-size: 16px; }
+		.invite-copy { min-width: 0; }
+		.invite-copy strong { display: block; overflow: hidden; color: #434b43; font-size: 11px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+		.invite-copy small { display: block; margin-top: 4px; color: #8b9288; font-size: 9px; }
+		.side-footer { display: flex; flex: 0 0 auto; align-items: center; gap: 9px; padding: 13px 18px; border-top: 1px solid var(--line); }
+		.side-footer-copy { font-size: 11px; font-weight: 600; }
+		.side-footer-copy small { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; font-weight: 400; }
+		.main { position: relative; display: grid; min-width: 0; min-height: 0; grid-template-rows: 72px minmax(0, 1fr); background: #f4f6f1; }
+		.chat-header { z-index: 1; display: flex; min-width: 0; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid var(--line); background: var(--white); }
+		.header-person { display: flex; min-width: 0; align-items: center; gap: 11px; }
+		.header-avatar { display: none; width: 38px; height: 38px; }
+		.header-person-copy { min-width: 0; }
+		.header-title { overflow: hidden; font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+		.header-subtitle { margin-top: 4px; color: var(--muted); font-size: 10px; }
+		.header-action { width: 34px; height: 34px; border: 0; border-radius: 8px; background: transparent; color: #727a71; cursor: pointer; font-size: 19px; }
+		.header-action:hover { background: #f1f3ef; }
+		.chat-body { position: relative; display: grid; min-height: 0; grid-template-rows: minmax(0, 1fr) auto; }
+		.chat-body::before { position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(#b6c6b21a .8px, transparent .8px); background-size: 19px 19px; content: ""; opacity: .45; }
+		.empty-state { position: relative; display: grid; align-content: center; justify-items: center; padding: 35px 20px; text-align: center; }
+		.empty-mark { position: relative; display: grid; width: 88px; height: 88px; place-items: center; margin-bottom: 23px; border: 1px solid #dbe6db; border-radius: 28px 28px 28px 8px; background: #f9fbf7; color: var(--green); font-size: 36px; animation: rise .5s both; }
+		.empty-mark::after { position: absolute; right: -9px; bottom: -7px; width: 21px; height: 21px; border: 4px solid #f4f6f1; border-radius: 50%; background: #e8b18e; content: ""; }
+		.empty-state h1 { margin: 0 0 9px; font-size: 23px; font-weight: 550; letter-spacing: 0; }
+		.empty-state p { max-width: 320px; margin: 0; color: #818980; font-size: 12px; line-height: 1.7; }
+		.empty-state .add-friend { width: auto; margin-top: 21px; padding: 0 17px; }
+		.conversation { position: relative; display: none; min-height: 0; grid-template-rows: minmax(0, 1fr) auto; }
+		.messages { overflow-y: auto; padding: 25px clamp(18px, 6vw, 80px); }
+		.message { display: flex; margin: 0 0 12px; animation: rise .2s both; }
+		.message-bubble { max-width: min(78%, 520px); padding: 10px 13px; border: 1px solid #e7eae4; border-radius: 4px 12px 12px; background: white; box-shadow: 0 1px 1px #20272008; color: #424a42; font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; }
+		.message.mine { justify-content: flex-end; }
+		.message.mine .message-bubble { border-color: #d8eadc; border-radius: 12px 4px 12px 12px; background: #e5f2e7; }
+		.message-time { display: block; margin-top: 4px; color: #8d968c; font-size: 9px; text-align: right; }
+		.composer-wrap { position: relative; padding: 12px 20px 17px; }
+		.composer { display: flex; min-height: 48px; align-items: flex-end; gap: 10px; padding: 6px 7px 6px 15px; border: 1px solid #e3e7df; border-radius: 9px; background: white; box-shadow: 0 2px 9px #20272008; }
+		.composer textarea { width: 100%; min-height: 34px; max-height: 110px; padding: 9px 0 6px; resize: none; border: 0; outline: 0; background: transparent; color: var(--ink); font: 12px/1.5 var(--font); }
+		.composer textarea::placeholder { color: #9aa198; }
+		.send-button { display: grid; width: 35px; height: 35px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 8px; background: var(--green); color: white; cursor: pointer; font-size: 15px; }
+		.send-button:disabled { background: #e7ebe5; color: #a0a79e; cursor: default; }
+		.mobile-menu { display: none; }
+		dialog { width: min(410px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--line); border-radius: 12px; background: white; color: var(--ink); box-shadow: 0 22px 70px #18241c30; }
+		dialog::backdrop { background: #18241c70; backdrop-filter: blur(2px); }
+		.dialog-form { padding: 24px; }
+		.dialog-form h2 { margin: 0 0 7px; font-size: 19px; font-weight: 650; }
+		.dialog-form p { margin: 0 0 20px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+		.dialog-form label, .registration-card label { display: block; margin: 0 0 7px; color: #505951; font-size: 11px; font-weight: 600; }
+		.dialog-form input, .registration-card input { width: 100%; height: 41px; padding: 0 11px; border: 1px solid #dce2db; border-radius: 7px; outline-color: #74ad8a; background: white; color: var(--ink); font-size: 12px; }
+		.dialog-form input::placeholder, .registration-card input::placeholder { color: #a1a89f; }
+		.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+		.dialog-actions button { min-height: 36px; padding: 0 13px; border: 1px solid #e0e5de; border-radius: 7px; background: white; color: #596159; cursor: pointer; font-size: 11px; }
+		.dialog-actions button[type="submit"], .dialog-actions .primary { border-color: var(--green); background: var(--green); color: white; }
+		.invite-url { margin-top: 13px !important; font-size: 10px !important; overflow-wrap: anywhere; }
+		.open-invite-link { display: inline-block; margin-top: 11px; color: var(--green-dark); font-size: 11px; font-weight: 650; text-decoration: none; }
+		.open-invite-link:hover { text-decoration: underline; }
+		.invite-warning { margin: 13px 0 0 !important; padding: 10px; border-radius: 7px; background: #fbf3df; color: #725c2b !important; font-size: 10px !important; line-height: 1.5; }
+		.toast { position: fixed; right: 20px; bottom: 20px; z-index: 12; padding: 11px 15px; border-radius: 8px; background: #26352d; color: white; box-shadow: 0 7px 22px #18241c30; font-size: 11px; animation: rise .2s both; }
+		.registration-screen { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 18px; background: var(--paper); }
+		.registration-screen[hidden] { display: none; }
+		.registration-card { width: min(420px, 100%); padding: 29px; border: 1px solid var(--line); border-radius: 13px; background: white; box-shadow: 0 14px 50px #18241c0d; }
+		.registration-card .brand { margin-bottom: 25px; }
+		.registration-card h1 { margin: 0 0 8px; font-size: 22px; font-weight: 600; }
+		.registration-card > p { margin: 0 0 22px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+		.registration-card .field { margin-bottom: 14px; }
+		.registration-card .add-friend { margin-top: 20px; }
+		.registration-note { margin-top: 15px !important; font-size: 10px !important; text-align: center; }
+		.auth-toggle { display: block; width: 100%; margin-top: 13px; border: 0; background: transparent; color: var(--green-dark); cursor: pointer; font-size: 11px; }
+		.auth-toggle:hover { text-decoration: underline; }
+		#auth-status { min-height: 16px; margin: 9px 0; color: #67766a; font-size: 11px; line-height: 1.5; }
+		@keyframes rise { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+		@media (max-width: 760px) {
+			.shell { grid-template-columns: minmax(0, 1fr); }
+			.sidebar { position: fixed; inset: 0 auto 0 0; width: min(350px, 88vw); transform: translateX(-105%); transition: transform .22s ease; box-shadow: 8px 0 30px #18241c16; }
+			.sidebar.open { transform: translateX(0); }
+			.main { grid-template-rows: 62px minmax(0, 1fr); }
+			.chat-header { padding: 0 13px; }
+			.mobile-menu { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; margin-right: 2px; border: 0; border-radius: 7px; background: transparent; color: #586258; cursor: pointer; font-size: 19px; }
+			.header-action { width: 32px; height: 32px; }
+			.empty-state h1 { font-size: 21px; }
+			.composer-wrap { padding: 9px 10px 12px; }
+		}
+	</style>
+</head>
+<body>
+	<div class="shell">
+		<aside class="sidebar" id="sidebar">
+			<header class="side-header"><div class="brand"><span class="brand-mark" aria-hidden="true">↗</span><span>loop</span></div><div class="profile-avatar" aria-label="Your profile">ME</div></header>
+			<div class="side-tools">
+				<button class="add-friend" id="open-add-friend"><span aria-hidden="true">+</span>Add friend</button>
+				<label class="search-box"><span aria-hidden="true">⌕</span><input id="friend-search" type="search" placeholder="Search friends" aria-label="Search friends"></label>
+			</div>
+			<section class="list-section" aria-label="Friends"><div class="section-title"><span>Friends</span><span id="friend-count">0</span></div><div class="friend-list" id="friend-list"></div></section>
+			<section class="invitation-section" id="invitation-section" aria-label="Pending invitations"><div class="section-title"><span>Invitations</span><span id="invitation-count">0</span></div><div id="invitation-list"></div></section>
+			<footer class="side-footer"><div class="profile-avatar">ME</div><div class="side-footer-copy">Your account<small>Private to this browser</small></div></footer>
+		</aside>
+		<main class="main">
+			<header class="chat-header">
+				<div class="header-person"><button class="mobile-menu" id="menu-toggle" aria-label="Open friends list">☰</button><div class="friend-avatar header-avatar" id="header-avatar"></div><div class="header-person-copy"><div class="header-title" id="header-title">Your messages</div><div class="header-subtitle" id="header-subtitle">Private conversations with your friends</div></div></div>
+				<button class="header-action" id="about-button" aria-label="About Loop" title="About Loop">···</button>
+			</header>
+			<div class="chat-body">
+				<section class="empty-state" id="empty-state"><div class="empty-mark" aria-hidden="true">✳</div><h1>Your chats start here</h1><p>You don't have any friends yet. Add someone with their phone number and send them a link to register.</p><button class="add-friend" id="empty-add-friend"><span aria-hidden="true">+</span>Add your first friend</button></section>
+				<section class="conversation" id="conversation" aria-label="Chat conversation"><div class="messages" id="messages" aria-live="polite"></div><form class="composer-wrap" id="message-form"><div class="composer"><textarea id="message-input" rows="1" aria-label="Write a message" placeholder="Write a message"></textarea><button class="send-button" id="send-button" type="submit" aria-label="Send message" disabled>↗</button></div></form></section>
+			</div>
+		</main>
+	</div>
+	<dialog id="add-friend-dialog" aria-labelledby="add-friend-title">
+		<form class="dialog-form" id="add-friend-form"><h2 id="add-friend-title">Invite a friend</h2><p>Enter the phone number they’ll use when they register. We’ll make a personal registration link for them.</p><label for="friend-phone">Phone number</label><input id="friend-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+1 555 010 1234" maxlength="24" required><div class="dialog-actions"><button id="cancel-add-friend" type="button">Cancel</button><button type="submit">Create invite link</button></div></form>
+	</dialog>
+	<dialog id="invite-dialog" aria-labelledby="invite-title"><div class="dialog-form"><h2 id="invite-title">Your invite link is ready</h2><p>Send this link to your friend. They’ll register with the phone number you entered.</p><label for="invite-link">Registration link</label><input id="invite-link" type="text" readonly aria-label="Registration link"><a class="open-invite-link" id="open-registration-link" target="_blank" rel="noopener">Open registration page ↗</a><p class="invite-url" id="invite-recipient"></p><p class="invite-warning" id="invite-host-warning" hidden>This is a local demo link. Other people can’t register to your account until the app is hosted online and connected to shared accounts.</p><div class="dialog-actions"><button id="close-invite" type="button">Close</button><button class="primary" id="copy-invite" type="button">Copy link</button></div></div></dialog>
+	<section class="registration-screen" id="auth-screen" hidden aria-labelledby="auth-title">
+		<div class="registration-card">
+			<div class="brand"><span class="brand-mark" aria-hidden="true">↗</span><span>loop</span></div>
+			<h1 id="auth-title">Welcome to Loop</h1>
+			<p id="auth-description">Sign in to message your friends.</p>
+			<p class="registration-note" id="backend-note" hidden>Connect a free Supabase project to enable accounts and live messages. Setup instructions are in README.md.</p>
+			<form id="auth-form">
+			<div id="signup-fields" hidden>
+				<div class="field"><label for="auth-name">Your name</label><input id="auth-name" name="name" autocomplete="name" maxlength="50" placeholder="Name"></div>
+				<div class="field"><label for="auth-phone">Phone number</label><input id="auth-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="24" placeholder="+1 555 010 1234"></div>
+			</div>
+			<div class="field"><label for="auth-email">Email</label><input id="auth-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required></div>
+			<div class="field"><label for="auth-password">Password</label><input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="8" required></div>
+			<p id="auth-status" role="status"></p>
+			<button class="add-friend" id="auth-submit" type="submit">Sign in</button>
+			<button class="auth-toggle" id="auth-toggle" type="button">Create an account</button>
+			</form>
+		</div>
+	</section>
+	<script type="text/plain">
+		function readStorage(key, fallback) {
+			try { return JSON.parse(localStorage.getItem(key) || "null") ?? fallback; }
+			catch { return fallback; }
+		}
+		const friends = readStorage("loop-friends", []);
+		const invitations = readStorage("loop-invitations", []);
+		const conversations = readStorage("loop-conversations", {});
+		let activeFriendId = null;
+		const friendList = document.getElementById("friend-list");
+		const messageList = document.getElementById("messages");
+		const messageInput = document.getElementById("message-input");
+		const addFriendDialog = document.getElementById("add-friend-dialog");
+		const inviteDialog = document.getElementById("invite-dialog");
+		const palette = ["#d8e8d5", "#f0dec0", "#d5e5e8", "#efd8d4", "#ded8ed"];
+		function saveData() {
+			localStorage.setItem("loop-friends", JSON.stringify(friends));
+			localStorage.setItem("loop-invitations", JSON.stringify(invitations));
+			localStorage.setItem("loop-conversations", JSON.stringify(conversations));
+		}
+		function getInitials(name) {
+			const parts = name.trim().split(/\s+/);
+			return (parts.length > 1 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : name.slice(0, 2)).toUpperCase();
+		}
+		function makeAvatar(name, className = "friend-avatar") {
+			const avatar = document.createElement("div");
+			avatar.className = className;
+			avatar.textContent = getInitials(name);
+			avatar.style.backgroundColor = palette[name.length % palette.length];
+			return avatar;
+		}
+		function renderFriends(filter = "") {
+			const query = filter.trim().toLowerCase();
+			const matches = friends.filter((friend) => `${friend.name} ${friend.phone}`.toLowerCase().includes(query));
+			document.getElementById("friend-count").textContent = String(friends.length);
+			friendList.replaceChildren(...matches.map((friend) => {
+				const row = document.createElement("button");
+				row.type = "button";
+				row.className = `friend-row${activeFriendId === friend.id ? " active" : ""}`;
+				row.addEventListener("click", () => openConversation(friend.id));
+				row.append(makeAvatar(friend.name));
+				const copy = document.createElement("div");
+				copy.className = "friend-copy";
+				const top = document.createElement("div");
+				top.className = "friend-topline";
+				const name = document.createElement("span");
+				name.className = "friend-name";
+				name.textContent = friend.name;
+				const time = document.createElement("span");
+				time.className = "friend-time";
+				const messages = conversations[friend.id] || [];
+				time.textContent = messages.length ? messages[messages.length - 1].time : "";
+				const preview = document.createElement("div");
+				preview.className = "friend-preview";
+				preview.textContent = messages.length ? messages[messages.length - 1].text : friend.phone;
+				top.append(name, time);
+				copy.append(top, preview);
+				row.append(copy);
+				return row;
+			}));
+		}
+		function renderInvitations() {
+			document.getElementById("invitation-section").hidden = invitations.length === 0;
+			document.getElementById("invitation-count").textContent = String(invitations.length);
+			const list = document.getElementById("invitation-list");
+			list.replaceChildren(...invitations.map((invite) => {
+				const row = document.createElement("div");
+				row.className = "invite-row";
+				const symbol = document.createElement("div");
+				symbol.className = "invite-symbol";
+				symbol.textContent = "↗";
+				const copy = document.createElement("div");
+				copy.className = "invite-copy";
+				const phone = document.createElement("strong");
+				phone.textContent = invite.phone;
+				const status = document.createElement("small");
+				status.textContent = "Waiting for registration";
+				copy.append(phone, status);
+				row.append(symbol, copy);
+				return row;
+			}));
+		}
+		function renderMessages() {
+			const friend = friends.find((item) => item.id === activeFriendId);
+			if (!friend) return;
+			messageList.replaceChildren();
+			for (const item of conversations[friend.id] || []) {
+				const row = document.createElement("div");
+				row.className = `message${item.mine ? " mine" : ""}`;
+				const bubble = document.createElement("div");
+				bubble.className = "message-bubble";
+				bubble.append(document.createTextNode(item.text));
+				const time = document.createElement("time");
+				time.className = "message-time";
+				time.textContent = item.time;
+				bubble.append(time);
+				row.append(bubble);
+				messageList.append(row);
+			}
+			messageList.scrollTop = messageList.scrollHeight;
+		}
+		function openConversation(id) {
+			activeFriendId = id;
+			const friend = friends.find((item) => item.id === id);
+			document.getElementById("empty-state").style.display = "none";
+			document.getElementById("conversation").style.display = "grid";
+			const avatar = document.getElementById("header-avatar");
+			avatar.textContent = getInitials(friend.name);
+			avatar.style.backgroundColor = palette[friend.name.length % palette.length];
+			avatar.style.display = "grid";
+			document.getElementById("header-title").textContent = friend.name;
+			document.getElementById("header-subtitle").textContent = friend.phone;
+			document.getElementById("sidebar").classList.remove("open");
+			renderFriends(document.getElementById("friend-search").value);
+			renderMessages();
+			messageInput.focus();
+		}
+		function showToast(text) {
+			document.querySelector(".toast")?.remove();
+			const toast = document.createElement("div");
+			toast.className = "toast";
+			toast.textContent = text;
+			document.body.append(toast);
+			window.setTimeout(() => toast.remove(), 2800);
+		}
+		function normalizePhone(value) {
+			const trimmed = value.trim();
+			const digits = trimmed.replace(/[^\d]/g, "");
+			if (digits.length < 7 || digits.length > 15) return null;
+			return `${trimmed.startsWith("+") ? "+" : ""}${digits}`;
+		}
+		function createInviteUrl(id) {
+			const url = new URL(window.location.href);
+			url.search = "";
+			url.hash = "";
+			url.searchParams.set("register", id);
+			return url.href;
+		}
+		function render() { renderFriends(); renderInvitations(); }
+
+		for (const friend of friends) if (!conversations[friend.id]) conversations[friend.id] = [];
+		render();
+		document.getElementById("open-add-friend").addEventListener("click", () => addFriendDialog.showModal());
+		document.getElementById("empty-add-friend").addEventListener("click", () => addFriendDialog.showModal());
+		document.getElementById("cancel-add-friend").addEventListener("click", () => addFriendDialog.close());
+		document.getElementById("add-friend-form").addEventListener("submit", (event) => {
+			event.preventDefault();
+			const phone = normalizePhone(document.getElementById("friend-phone").value);
+			if (!phone) { showToast("Enter a valid phone number, including the country code."); return; }
+			if (friends.some((friend) => friend.phone === phone) || invitations.some((invite) => invite.phone === phone)) {
+				addFriendDialog.close();
+				showToast("That number is already in your friends or invitations.");
+				return;
+			}
+			const id = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+			const invite = { id, phone, createdAt: new Date().toISOString() };
+			invitations.push(invite);
+			saveData();
+			renderInvitations();
+			addFriendDialog.close();
+			document.getElementById("friend-phone").value = "";
+			const inviteUrl = createInviteUrl(id);
+			document.getElementById("invite-link").value = inviteUrl;
+			document.getElementById("open-registration-link").href = inviteUrl;
+			document.getElementById("invite-host-warning").hidden = !(window.location.protocol === "file:" || ["localhost", "127.0.0.1"].includes(window.location.hostname));
+			document.getElementById("invite-recipient").textContent = `For ${phone}`;
+			inviteDialog.showModal();
+		});
+		document.getElementById("close-invite").addEventListener("click", () => inviteDialog.close());
+		document.getElementById("copy-invite").addEventListener("click", async () => {
+			const link = document.getElementById("invite-link");
+			let copied = false;
+			try { await navigator.clipboard.writeText(link.value); copied = true; }
+			catch { link.select(); copied = document.execCommand("copy"); }
+			showToast(copied ? "Registration link copied." : "Select the link above and copy it.");
+		});
+		document.getElementById("friend-search").addEventListener("input", (event) => renderFriends(event.target.value));
+		document.getElementById("menu-toggle").addEventListener("click", () => document.getElementById("sidebar").classList.toggle("open"));
+		document.getElementById("about-button").addEventListener("click", () => showToast("Loop is a private messaging demo. Live registration needs a shared server."));
+		document.getElementById("message-form").addEventListener("submit", (event) => {
+			event.preventDefault();
+			const text = messageInput.value.trim();
+			if (!text || !activeFriendId) return;
+			const now = new Date();
+			conversations[activeFriendId] ||= [];
+			conversations[activeFriendId].push({ text, mine: true, time: now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) });
+			messageInput.value = "";
+			messageInput.style.height = "";
+			document.getElementById("send-button").disabled = true;
+			saveData();
+			renderMessages();
+			renderFriends(document.getElementById("friend-search").value);
+		});
+		messageInput.addEventListener("input", () => {
+			document.getElementById("send-button").disabled = !messageInput.value.trim();
+			messageInput.style.height = "auto";
+			messageInput.style.height = `${Math.min(messageInput.scrollHeight, 110)}px`;
+		});
+		messageInput.addEventListener("keydown", (event) => {
+			if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); document.getElementById("message-form").requestSubmit(); }
+		});
+
+		const registrationCode = new URLSearchParams(window.location.search).get("register");
+		if (registrationCode) {
+			const invite = invitations.find((item) => item.id === registrationCode);
+			const registerPhone = document.getElementById("register-phone");
+			if (invite) { registerPhone.value = invite.phone; registerPhone.readOnly = true; }
+			document.getElementById("registration-screen").hidden = false;
+			document.getElementById("registration-form").addEventListener("submit", (event) => {
+				event.preventDefault();
+				const name = document.getElementById("register-name").value.trim();
+				const phone = normalizePhone(registerPhone.value);
+				if (!name || !phone) { showToast("Enter your name and a valid phone number."); return; }
+				if (friends.some((friend) => friend.phone === phone)) { showToast("This number is already registered in this browser."); return; }
+				friends.push({ id: globalThis.crypto?.randomUUID?.() || `${Date.now()}`, name, phone });
+				const inviteIndex = invitations.findIndex((item) => item.id === registrationCode);
+				if (inviteIndex !== -1) invitations.splice(inviteIndex, 1);
+				conversations[friends[friends.length - 1].id] = [];
+				saveData();
+				history.replaceState({}, "", window.location.pathname);
+				document.getElementById("registration-screen").hidden = true;
+				render();
+				openConversation(friends[friends.length - 1].id);
+			});
+		}
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+	<script src="supabase-config.js"></script>
+	<script src="app.js"></script>
+</body>
+</html>
